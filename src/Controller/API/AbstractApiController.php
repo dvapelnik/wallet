@@ -4,6 +4,9 @@
 namespace App\Controller\API;
 
 
+use FOS\RestBundle\Controller\ControllerTrait;
+use FOS\RestBundle\View\ViewHandler;
+use FOS\RestBundle\View\ViewHandlerInterface;
 use JMS\Serializer\Serializer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -12,11 +15,37 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 abstract class AbstractApiController
 {
+    use ControllerTrait;
+
+    /** @var ViewHandler */
+    private $viewHandler;
+
     /** @var Serializer */
     protected $serializer;
 
     /** @var ValidatorInterface */
     protected $validator;
+
+    /**
+     * @param ViewHandler $viewHandler
+     * @return $this
+     */
+    public function setViewHandler(ViewHandler $viewHandler): AbstractApiController
+    {
+        $this->viewHandler = $viewHandler;
+
+        return $this;
+    }
+
+    /**
+     * Get the ViewHandler.
+     *
+     * @return ViewHandlerInterface
+     */
+    protected function getViewHandler()
+    {
+        return $this->viewHandler;
+    }
 
     /**
      * @param Serializer $serializer
@@ -38,25 +67,6 @@ abstract class AbstractApiController
         $this->validator = $validator;
 
         return $this;
-    }
-
-    /**
-     * @param array $data
-     * @param int $code
-     * @param string $status
-     *
-     * @return JsonResponse
-     */
-    protected function makeCorrectJsonResponse(array $data = [], int $code = 200, string $status = "OK"): JsonResponse
-    {
-        return new JsonResponse(
-            [
-                'status' => $status,
-                'code'   => $code,
-                'data'   => $data,
-            ],
-            $code
-        );
     }
 
     /**

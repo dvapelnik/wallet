@@ -8,6 +8,7 @@ use App\Services\CategoryService;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -27,11 +28,16 @@ class CategoryController extends AbstractApiController
      * @Route("/", name="api.category.list", methods={"GET"})
      *
      * @param CategoryService $categoryService
-     * @return JsonResponse
+     * @return Response
      */
-    public function listAction(CategoryService $categoryService): JsonResponse
+    public function listAction(CategoryService $categoryService): Response
     {
-        return $this->makeCorrectJsonResponse($this->serializer->toArray($categoryService->listOfCategories()));
+        $categories = $categoryService->listOfCategories();
+
+        $view = $this->view($categories);
+        $view->setFormat('json');
+
+        return $this->handleView($view);
     }
 
     /**
@@ -39,7 +45,7 @@ class CategoryController extends AbstractApiController
      *
      * @param Request $request
      * @param CategoryService $categoryService
-     * @return JsonResponse
+     * @return Response
      * @throws \LogicException
      * @throws \Doctrine\ORM\OptimisticLockException
      * @throws \Symfony\Component\Validator\Exception\MissingOptionsException
@@ -47,7 +53,7 @@ class CategoryController extends AbstractApiController
      * @throws \Symfony\Component\Validator\Exception\ConstraintDefinitionException
      * @throws \Doctrine\ORM\ORMException
      */
-    public function createAction(Request $request, CategoryService $categoryService): JsonResponse
+    public function createAction(Request $request, CategoryService $categoryService): Response
     {
         $constraint = $this->makeCategoryRequestConstraint(self::ACTION_CREATE);
 
@@ -59,16 +65,9 @@ class CategoryController extends AbstractApiController
 
         $data = $request->request->get('data');
 
-        return $this->makeCorrectJsonResponse(
-            $this->serializer->toArray(
-                $categoryService->createCategory(
-                    $this->serializer->fromArray(
-                        $data, DTO\Category::class
-                    )
-                )
-            ),
-            201
-        );
+        $category = $categoryService->createCategory($this->serializer->fromArray($data, DTO\Category::class));
+
+        return $this->handleView($this->view($category)->setFormat('json'));
     }
 
     /**
@@ -76,14 +75,14 @@ class CategoryController extends AbstractApiController
      *
      * @param int $id
      * @param CategoryService $categoryService
-     * @return JsonResponse
+     * @return Response
      * @throws \Doctrine\ORM\ORMException
      */
-    public function deleteAction(int $id, CategoryService $categoryService): JsonResponse
+    public function deleteAction(int $id, CategoryService $categoryService): Response
     {
         $categoryService->delete($id);
 
-        return $this->makeCorrectJsonResponse();
+        return $this->handleView($this->view([])->setFormat('json'));
     }
 
     /**
@@ -92,14 +91,16 @@ class CategoryController extends AbstractApiController
      * @param Request $request
      * @param CategoryService $categoryService
      * @param int $id
-     * @return JsonResponse
+     * @return Response
+     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws \Doctrine\ORM\ORMException
      * @throws \Symfony\Component\Validator\Exception\MissingOptionsException
      * @throws \Symfony\Component\Validator\Exception\InvalidOptionsException
      * @throws \Symfony\Component\Validator\Exception\ConstraintDefinitionException
      * @throws \LogicException
      * @throws \Doctrine\ORM\EntityNotFoundException
      */
-    public function updateAction(Request $request, CategoryService $categoryService, int $id): JsonResponse
+    public function updateAction(Request $request, CategoryService $categoryService, int $id): Response
     {
         $constraint = $this->makeCategoryRequestConstraint(self::ACTION_UPDATE);
 
@@ -115,7 +116,7 @@ class CategoryController extends AbstractApiController
 
         $category = $categoryService->update($category);
 
-        return $this->makeCorrectJsonResponse($this->serializer->toArray($category));
+        return $this->handleView($this->view($category)->setFormat('json'));
     }
 
     /**

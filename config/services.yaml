@@ -16,7 +16,7 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/*'
-        exclude: '../src/{DataTransferObject,Entity,Migrations,Tests,EventListener,ParamConverter}'
+        exclude: '../src/{ViewHandler,DataTransferObject,Entity,Migrations,Tests,EventListener,ParamConverter}'
 
     # controllers are imported separately to make sure services can be injected
     # as action arguments even if you don't extend any base controller class
@@ -28,6 +28,7 @@ services:
         resource: '../src/Controller/API/*'
         tags: ['controller.service_arguments']
         calls:
+            - { method: setViewHandler, arguments: [ '@api.view_handler' ] }
             - { method: setSerializer, arguments: [ '@jms_serializer' ] }
             - { method: setValidator, arguments: [ '@validator' ] }
 
@@ -39,3 +40,15 @@ services:
         arguments: [ '@logger' ]
         tags:
             - {name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
+
+    api.view_handler:
+        parent: fos_rest.view_handler.default
+        public: true
+        autowire: true
+        autoconfigure: false
+        calls:
+            - { method: registerHandler, arguments: [ 'json', [ '@api.view_handler.json', 'createResponse' ]] }
+
+    api.view_handler.json:
+        class: App\ViewHandler\JsonViewHandler
+        arguments: [ '@jms_serializer' ]
