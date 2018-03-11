@@ -1,0 +1,9 @@
+front:
+    prefix: /
+    resource: ../src/Controller/Front
+    type: annotation
+
+api:
+    prefix: /api
+    resource: ../src/Controller/API
+    type: annotation
